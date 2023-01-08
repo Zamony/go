@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Zamony/httpstatus"
+	"github.com/Zamony/go/httpstatus"
 )
 
 func TestStatus(t *testing.T) {

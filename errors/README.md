@@ -1,29 +1,26 @@
-Simple error handling primitives.
-
-**Features**
+Simple error handling primitives:
 * stack traces;
 * errors wrapping;
 * compatible with stdlib;
 * no external dependencies;
 
-**Example**
-
+**API**
 ```go
-package main
+// New creates an error with message and a stacktrace
+err := errors.New("new")
+err := errors.Newf("user %q doesn't exist", userID)
 
-import (
-	"github.com/Zamony/go/errors"
-	"github.com/Zamony/go/errors/stackerr"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-)
+// Wrap adds a stacktrace to the error if it doesn't have one
+err := errors.Wrap(err)
+err := errors.Wrapf(err, "user %q doesn't exist", userID)
 
-func main() {
-	zerolog.ErrorStackMarshaler = stackerr.MarshalCompactZerolog
-	err := errors.New("nasty error")
-	log.Error().Stack().Err(err).Msg("Main has failed")
-}
+// Is reports whether any error in err's tree matches target
+if errors.Is(err, ErrNotExists) {}
+if errors.As(err, &valueErr) {}
 
-// Output: {"level":"error","stack":"main.main:12/runtime.main/goexit","error":"nasty error","time":"2023-01-08T14:21:15+03:00","message":"Main has failed"}
+// Combine multiple errors into one
+err = errors.Combine(err, closeErr)
 
+// Create constant errors
+const ErrNotExists = errors.ConstantError("doesn't exist")
 ```

@@ -6,13 +6,13 @@ import (
 	"strings"
 )
 
-type multiError []error
+type multiErrors []error
 
-func (e multiError) Unwrap() []error {
+func (e multiErrors) Unwrap() []error {
 	return e
 }
 
-func (e multiError) toString(format func(error) string) string {
+func (e multiErrors) toString(format func(error) string) string {
 	errs := make([]string, len(e))
 	for i := range e {
 		errs[i] = format(e[i])
@@ -21,11 +21,11 @@ func (e multiError) toString(format func(error) string) string {
 	return strings.Join(errs, "; ")
 }
 
-func (e multiError) Error() string {
+func (e multiErrors) Error() string {
 	return e.toString(errorStr)
 }
 
-func (e multiError) Format(state fmt.State, verb rune) {
+func (e multiErrors) Format(state fmt.State, verb rune) {
 	switch verb {
 	case 'v':
 		if state.Flag('+') {
@@ -40,7 +40,7 @@ func (e multiError) Format(state fmt.State, verb rune) {
 
 // Combine joins multiple errors into one.
 func Combine(errs ...error) error {
-	result := make(multiError, 0, len(errs))
+	result := make(multiErrors, 0, len(errs))
 	for _, err := range errs {
 		if err != nil {
 			result = append(result, err)

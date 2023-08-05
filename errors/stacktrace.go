@@ -48,17 +48,17 @@ func stacktrace(frameset []*frameInfo) string {
 	prevPkg := ""
 
 	for _, frame := range frameset {
-		if isFirst {
+		switch {
+		case isFirst:
+			isFirst = false
 			f := fmt.Sprintf("%s.%s:%d", frame.Package, frame.Func, frame.Line)
 			frames = append(frames, f)
-			isFirst = false
-		} else if frame.Package != prevPkg {
+		case frame.Package != prevPkg:
 			f := fmt.Sprintf("%s.%s", frame.Package, frame.Func)
 			frames = append(frames, f)
-		} else {
+		default:
 			frames = append(frames, frame.Func)
 		}
-
 		prevPkg = frame.Package
 	}
 

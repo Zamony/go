@@ -60,7 +60,7 @@ func Wrap(err error) error {
 	return &basicError{err, frames()}
 }
 
-// Wrap annotates an error with a message.
+// Wrapf annotates an error with a message.
 // Also adds a stacktrace to the error if it doesn't have one.
 func Wrapf(err error, format string, a ...any) error {
 	msg := fmt.Sprintf(format, a...)

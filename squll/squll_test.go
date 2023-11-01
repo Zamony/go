@@ -7,14 +7,6 @@ import (
 	"github.com/Zamony/go/squll"
 )
 
-// template := squll.Must(`
-// INSERT INTO mytable VALUES
-// {{range $i, $v := .}}
-// 	{{if $i}}, {{end}}
-// 	({{argument $v.Name}}, {{argument $v.Score}})
-// {{end}}
-// `)
-
 func TestBuildQuery(t *testing.T) {
 	t.Parallel()
 

@@ -1,16 +1,17 @@
-package par_test
+package muxmap_test
 
 import (
 	"reflect"
+	"sync"
 	"testing"
 
-	"github.com/Zamony/go/par"
+	"github.com/Zamony/go/sync/muxmap"
 )
 
 func TestMapSetGet(t *testing.T) {
 	t.Parallel()
 
-	var m par.Map[string, int]
+	m := muxmap.New[string, int]()
 	m.Set("a", 1)
 
 	value, ok := m.SetIf("b", func(value int, exists bool) bool {
@@ -58,7 +59,7 @@ func TestMapSetGet(t *testing.T) {
 func TestMapSetDelete(t *testing.T) {
 	t.Parallel()
 
-	var m par.Map[string, int]
+	m := muxmap.New[string, int]()
 	m.Set("a", 1)
 	m.Set("b", 2)
 	m.Set("c", 3)
@@ -85,13 +86,13 @@ func TestMapSetDelete(t *testing.T) {
 func TestMapForEach(t *testing.T) {
 	t.Parallel()
 
-	var m par.Map[string, int]
+	m := muxmap.New[string, int]()
 	m.Set("a", 1)
 	m.Set("b", 2)
 	m.Set("c", 3)
 
 	mit := map[string]int{}
-	completed := m.ForEach(func(key string, value int) bool {
+	completed := m.All(func(key string, value int) bool {
 		mit[key] = value
 		return true
 	})
@@ -110,42 +111,50 @@ func TestMapConcurrent(t *testing.T) {
 	t.Parallel()
 
 	const key = "a"
-	var m par.Map[string, int]
-	var wg par.WaitGroup
+	m := muxmap.New[string, int]()
+	var wg sync.WaitGroup
 	defer wg.Wait()
 
 	for i := 1; i <= 10; i++ {
 		i := i
-		wg.Go(func() {
+		goGroup(&wg, func() {
 			m.Set(key, i)
 		})
-		wg.Go(func() {
+		goGroup(&wg, func() {
 			m.SetIf(key, func(int, bool) bool {
 				return true
 			}, func(v int) int {
 				return v + 1
 			})
 		})
-		wg.Go(func() {
+		goGroup(&wg, func() {
 			m.Get(key)
 		})
-		wg.Go(func() {
+		goGroup(&wg, func() {
 			m.Len()
 		})
-		wg.Go(func() {
+		goGroup(&wg, func() {
 			m.Delete(key)
 		})
-		wg.Go(func() {
+		goGroup(&wg, func() {
 			m.DeleteIf(key, func(int) bool {
 				return true
 			})
 		})
-		wg.Go(func() {
-			m.ForEach(func(string, int) bool {
+		goGroup(&wg, func() {
+			m.All(func(string, int) bool {
 				return true
 			})
 		})
 	}
+}
+
+func goGroup(wg *sync.WaitGroup, fun func()) {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		fun()
+	}()
 }
 
 func equal(t *testing.T, got, want any) {

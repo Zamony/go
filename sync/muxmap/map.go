@@ -1,15 +1,28 @@
-package par
+package muxmap
 
 import "sync"
 
-// Map is a thread-safe map. N is a size hint for the map.
+// Map is a goroutine-safe map.
+//
+// Map must not be copied after first use.
 type Map[K comparable, V any] struct {
 	data map[K]V
 	mu   sync.RWMutex // protects data
-	N    int
 }
 
-// Len returns number of elements in the map.
+// New creates a new map. Optional parameter is a size hint.
+func New[K comparable, V any](size ...int) Map[K, V] {
+	switch len(size) {
+	case 0:
+		return Map[K, V]{data: make(map[K]V, 0)}
+	case 1:
+		return Map[K, V]{data: make(map[K]V, size[0])}
+	default:
+		panic("ambiguous map size")
+	}
+}
+
+// Len returns the number of elements in the map.
 func (m *Map[K, V]) Len() int {
 	m.mu.RLock()
 	n := len(m.data)
@@ -17,20 +30,9 @@ func (m *Map[K, V]) Len() int {
 	return n
 }
 
-func (m *Map[K, V]) initOnce() {
-	switch {
-	case m.data != nil:
-	case m.N > 0:
-		m.data = make(map[K]V, m.N)
-	default:
-		m.data = make(map[K]V)
-	}
-}
-
 // Set sets the value by the given key.
 func (m *Map[K, V]) Set(key K, value V) {
 	m.mu.Lock()
-	m.initOnce()
 	m.data[key] = value
 	m.mu.Unlock()
 }
@@ -60,7 +62,6 @@ func (m *Map[K, V]) SetIf(key K, cond func(value V, exists bool) bool, valfunc f
 		return value, false
 	}
 
-	m.initOnce()
 	value = valfunc(value)
 	m.data[key] = value
 	return value, true
@@ -112,19 +113,17 @@ func (m *Map[K, V]) DeleteIf(key K, cond func(value V) bool) bool {
 // Clear clears the map.
 func (m *Map[K, V]) Clear() {
 	m.mu.Lock()
-	m.data = nil
+	clear(m.data)
 	m.mu.Unlock()
 }
 
-// ForEach iterates over map and calls provided function for each key and value.
-// Iteration is aborted after provided function returns false.
-// Returns false if iteration was aborted.
-func (m *Map[K, V]) ForEach(fun func(key K, value V) bool) bool {
+// All iterates over a map.
+func (m *Map[K, V]) All(yield func(K, V) bool) bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
 	for k, v := range m.data {
-		if !fun(k, v) {
+		if !yield(k, v) {
 			return false
 		}
 	}

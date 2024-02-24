@@ -1,7 +1,8 @@
 Additional synchronization primitives:
 * generic goroutine-safe map;
 * safer waitgroup;
-* singleflight (duplicate call suppression).
+* singleflight (duplicate call suppression);
+* context-aware mutex.
 
 **Thread-safe map**
 ```
@@ -30,3 +31,10 @@ New() Group
 Group.Do(key K, fun func() V) V
 ```
 
+**Mutex**
+```
+TryLock(ctx context.Context) error
+TryRLock(ctx context.Context) error
+Lock()/Unlock()
+RLock()/RUnlock()
+```

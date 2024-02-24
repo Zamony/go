@@ -1,15 +1,22 @@
-package rwmutex
+package mutex
 
 import (
 	"context"
 	"sync"
 )
 
-type Mutex struct {
+// A RWMutex is a reader/writer mutual exclusion lock.
+// The lock can be held by an arbitrary number of readers or a single writer.
+// The zero value for a RWMutex is an unlocked mutex.
+//
+// A RWMutex must not be copied after first use.
+type RWMutex struct {
 	mu sync.RWMutex
 }
 
-func (m *Mutex) TryLock(ctx context.Context) error {
+// TryLock waits to lock RWMutex for writing.
+// A context error is returned on canceled context.
+func (m *RWMutex) TryLock(ctx context.Context) error {
 	if m.mu.TryLock() {
 		return nil
 	}
@@ -17,19 +24,33 @@ func (m *Mutex) TryLock(ctx context.Context) error {
 	return wait(ctx, &m.mu)
 }
 
-func (m *Mutex) TryRLock(ctx context.Context) error {
+// TryRLock waits to lock RWMutex for reading.
+// A context error is returned on canceled context.
+func (m *RWMutex) TryRLock(ctx context.Context) error {
 	if m.mu.TryRLock() {
 		return nil
 	}
 	return wait(ctx, (&m.mu).RLocker())
 }
 
-func (m *Mutex) Lock() {
+// Lock locks RWMutex for writing.
+func (m *RWMutex) Lock() {
 	m.mu.Lock()
 }
 
-func (m *Mutex) Unlock() {
+// Unlock unlocks RWMutex for writing.
+func (m *RWMutex) Unlock() {
 	m.mu.Unlock()
+}
+
+// RLock locks RWMutex for reading.
+func (m *RWMutex) RLock() {
+	m.mu.RLock()
+}
+
+// RUnlock undoes a single RLock call.
+func (m *RWMutex) RUnlock() {
+	m.mu.RUnlock()
 }
 
 func wait(ctx context.Context, mu sync.Locker) error {

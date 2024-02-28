@@ -12,9 +12,9 @@ func TestCombine(t *testing.T) {
 		t.Errorf("Combined nil errors are not nil: got %v", err)
 	}
 
-	const (
-		errFoo = errors.ConstantError("errFoo")
-		errBar = errors.ConstantError("errBar")
+	var (
+		errFoo = errors.SentinelError("errFoo")
+		errBar = errors.SentinelError("errBar")
 	)
 	err := errors.Combine(errFoo, nil, errBar)
 	if !errors.Is(err, errFoo) {

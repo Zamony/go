@@ -7,7 +7,7 @@ import (
 	"github.com/Zamony/go/errors"
 )
 
-const errBar = errors.ConstantError("bar")
+var errBar = errors.SentinelError("bar")
 
 func newFooError() error {
 	return errors.New("foo")
@@ -61,18 +61,25 @@ func TestBasicErrorFormat(t *testing.T) {
 	}
 }
 
+type CustomError struct {
+	Message string
+}
+
+func (c CustomError) Error() string { return c.Message }
+
 func TestBasicErrorWrap(t *testing.T) {
-	if has := errors.Is(errors.Wrap(errBar), errBar); !has {
+	errCustom := CustomError{"custom"}
+	if has := errors.Is(errors.Wrap(errCustom), errCustom); !has {
 		t.Error("Wrap doesn't chain errors")
 	}
-	if has := errors.Is(errors.Wrapf(errBar, "wrap%d", 1), errBar); !has {
+	if has := errors.Is(errors.Wrapf(errCustom, "wrap%d", 1), errCustom); !has {
 		t.Error("Wrapf doesn't chain errors")
 	}
 
-	var target errors.ConstantError
-	if has := errors.As(errors.Wrapf(errBar, "wrap%d", 1), &target); !has {
+	var target CustomError
+	if has := errors.As(errors.Wrapf(errCustom, "wrap%d", 1), &target); !has {
 		t.Error("Target error was not found in the chain")
-	} else if target != errBar {
+	} else if target != errCustom {
 		t.Error("Target error doesn't match original error")
 	}
 

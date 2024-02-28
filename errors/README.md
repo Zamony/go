@@ -21,6 +21,6 @@ if errors.As(err, &valueErr) {}
 // Combine multiple errors into one
 err = errors.Combine(err, closeErr)
 
-// Create constant errors
-const ErrNotExists = errors.ConstantError("doesn't exist")
+// Create sentinel errors
+var ErrNotExists = errors.SentinelError("doesn't exist")
 ```

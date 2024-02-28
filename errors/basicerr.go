@@ -82,6 +82,11 @@ func As(err error, target any) bool {
 	return stderrors.As(err, target)
 }
 
+// SentinelError creates new sentinel error without stacktrace.
+func SentinelError(text string) error {
+	return stderrors.New(text)
+}
+
 func newError(frames *runtime.Frames, text string) error {
 	return &basicError{stderrors.New(text), frames}
 }

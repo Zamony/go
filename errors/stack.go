@@ -6,15 +6,15 @@ import (
 	"strings"
 )
 
-// Stacktrace returns stacktrace of an error.
-func Stacktrace(err error) string {
-	sterr, ok := err.(stackFramer)
+// StackTrace returns stacktrace of an error.
+func StackTrace(err error) string {
+	sterr, ok := err.(stacktracer) // it is possible to use As() in the future
 	if !ok {
 		return ""
 	}
 
 	var frameset []*frameInfo
-	frames := sterr.StackFrames()
+	frames := runtime.CallersFrames(sterr.StackTrace())
 	for {
 		frame, more := frames.Next()
 		frameset = append(frameset, parseFrame(&frame))

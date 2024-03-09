@@ -18,8 +18,8 @@ err := errors.Wrapf(err, "user %q doesn't exist", userID)
 if errors.Is(err, ErrNotExists) {}
 if errors.As(err, &valueErr) {}
 
-// Combine multiple errors into one
-err = errors.Combine(err, closeErr)
+// Join multiple errors into one
+err = errors.Join(err, closeErr)
 
 // Create sentinel errors
 var ErrNotExists = errors.SentinelError("doesn't exist")

@@ -1,4 +1,4 @@
-package muxmap
+package hatmap
 
 import "sync"
 
@@ -10,16 +10,9 @@ type Map[K comparable, V any] struct {
 	mu   sync.RWMutex // protects data
 }
 
-// New creates a new map. Optional parameter is a size hint.
-func New[K comparable, V any](size ...int) Map[K, V] {
-	switch len(size) {
-	case 0:
-		return Map[K, V]{data: make(map[K]V, 0)}
-	case 1:
-		return Map[K, V]{data: make(map[K]V, size[0])}
-	default:
-		panic("ambiguous map size")
-	}
+// New creates a new map with size hint.
+func New[K comparable, V any](size int) Map[K, V] {
+	return Map[K, V]{data: make(map[K]V, size)}
 }
 
 // Len returns the number of elements in the map.
@@ -33,6 +26,9 @@ func (m *Map[K, V]) Len() int {
 // Set sets the value by the given key.
 func (m *Map[K, V]) Set(key K, value V) {
 	m.mu.Lock()
+	if m.data == nil {
+		m.data = make(map[K]V)
+	}
 	m.data[key] = value
 	m.mu.Unlock()
 }
@@ -63,6 +59,9 @@ func (m *Map[K, V]) SetIf(key K, cond func(value V, exists bool) bool, valfunc f
 	}
 
 	value = valfunc(value)
+	if m.data == nil {
+		m.data = make(map[K]V)
+	}
 	m.data[key] = value
 	return value, true
 }

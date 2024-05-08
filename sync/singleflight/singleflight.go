@@ -3,7 +3,7 @@ package singleflight
 import (
 	"sync/atomic"
 
-	"github.com/Zamony/go/sync/muxmap"
+	"github.com/Zamony/go/sync/hatmap"
 )
 
 type result[T any] struct {
@@ -16,12 +16,7 @@ type result[T any] struct {
 //
 // Group must not be copied after first use.
 type Group[K comparable, V any] struct {
-	results muxmap.Map[K, *result[V]]
-}
-
-// New creates a new singleflight Group.
-func New[K comparable, V any]() Group[K, V] {
-	return Group[K, V]{muxmap.New[K, *result[V]]()}
+	results hatmap.Map[K, *result[V]]
 }
 
 // Do executes and returns the results of the given function, making

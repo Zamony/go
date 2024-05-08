@@ -1,17 +1,17 @@
-package muxmap_test
+package hatmap_test
 
 import (
 	"reflect"
 	"sync"
 	"testing"
 
-	"github.com/Zamony/go/sync/muxmap"
+	"github.com/Zamony/go/sync/hatmap"
 )
 
 func TestMapSetGet(t *testing.T) {
 	t.Parallel()
 
-	m := muxmap.New[string, int]()
+	var m hatmap.Map[string, int]
 	m.Set("a", 1)
 
 	value, ok := m.SetIf("b", func(value int, exists bool) bool {
@@ -59,7 +59,7 @@ func TestMapSetGet(t *testing.T) {
 func TestMapSetDelete(t *testing.T) {
 	t.Parallel()
 
-	m := muxmap.New[string, int]()
+	m := hatmap.New[string, int](3)
 	m.Set("a", 1)
 	m.Set("b", 2)
 	m.Set("c", 3)
@@ -86,7 +86,7 @@ func TestMapSetDelete(t *testing.T) {
 func TestMapForEach(t *testing.T) {
 	t.Parallel()
 
-	m := muxmap.New[string, int]()
+	var m hatmap.Map[string, int]
 	m.Set("a", 1)
 	m.Set("b", 2)
 	m.Set("c", 3)
@@ -111,7 +111,7 @@ func TestMapConcurrent(t *testing.T) {
 	t.Parallel()
 
 	const key = "a"
-	m := muxmap.New[string, int]()
+	var m hatmap.Map[string, int]
 	var wg sync.WaitGroup
 	defer wg.Wait()
 

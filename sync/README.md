@@ -6,8 +6,6 @@ Additional synchronization primitives:
 
 **Thread-safe map**
 ```
-New() Map
-
 Map.Len() int
 Map.Get(key K) (V, bool)
 Map.Set(key K, value V)
@@ -26,8 +24,6 @@ Wait()
 
 **Singleflight**
 ```
-New() Group
-
 Group.Do(key K, fun func() V) V
 ```
 

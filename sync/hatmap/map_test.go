@@ -14,27 +14,21 @@ func TestMapSetGet(t *testing.T) {
 	var m hatmap.Map[string, int]
 	m.Set("a", 1)
 
-	value, ok := m.SetIf("b", func(value int, exists bool) bool {
+	value, ok := m.SetIf("b", 2, func(currValue int) bool {
 		return true
-	}, func(int) int {
-		return 2
 	})
 	equal(t, value, 2)
 	equal(t, ok, true)
 
-	value, ok = m.SetIf("b", func(value int, exists bool) bool {
-		return !exists
-	}, func(int) int {
-		return 3
+	value, ok = m.SetIf("b", 3, func(currValue int) bool {
+		return currValue == 0
 	})
 	equal(t, value, 2)
 	equal(t, ok, false)
 
 	m.Set("c", 4)
-	value, ok = m.SetIf("c", func(value int, exists bool) bool {
-		return value == 4
-	}, func(int) int {
-		return 5
+	value, ok = m.SetIf("c", 5, func(currValue int) bool {
+		return currValue == 4
 	})
 	equal(t, value, 5)
 	equal(t, ok, true)
@@ -121,10 +115,8 @@ func TestMapConcurrent(t *testing.T) {
 			m.Set(key, i)
 		})
 		goGroup(&wg, func() {
-			m.SetIf(key, func(int, bool) bool {
+			m.SetIf(key, 77, func(currValue int) bool {
 				return true
-			}, func(v int) int {
-				return v + 1
 			})
 		})
 		goGroup(&wg, func() {

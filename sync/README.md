@@ -6,14 +6,14 @@ Additional synchronization primitives:
 
 **Thread-safe map**
 ```
-Map.Len() int
-Map.Get(key K) (V, bool)
-Map.Set(key K, value V)
-Map.SetIf(key K, cond func(value V, exists bool) bool, valfunc func(prev V) V) (value V, ok bool)
-Map.Delete(key K)
-Map.DeleteIf(key K, cond func(value V) bool) bool
-Map.Clear()
-Map.All(yield func(key K, value V) bool) bool
+Len() int
+Get(key K) (V, bool)
+Set(key K, value V)
+SetIf(key K, newValue V, cond Condition) (actual V, ok bool)
+Delete(key K)
+DeleteIf(key K, cond Condition) bool
+Clear()
+All(yield func(key K, value V) bool) bool
 ```
 
 **Safer waitgroup**
@@ -31,6 +31,8 @@ Group.Do(key K, fun func() V) V
 ```
 TryLock(ctx context.Context) error
 TryRLock(ctx context.Context) error
-Lock()/Unlock()
-RLock()/RUnlock()
+Lock()
+Unlock()
+RLock()
+RUnlock()
 ```

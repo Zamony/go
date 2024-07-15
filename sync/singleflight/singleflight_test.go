@@ -16,7 +16,7 @@ func TestSingleFlight(t *testing.T) {
 	var wg sync.WaitGroup
 	defer wg.Wait()
 	single := singleflight.Group[string, int64]{}
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

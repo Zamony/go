@@ -1,6 +1,12 @@
+// Package hatmap provides generic goroutine-safe map.
+// It is implemented as an ordinary map protected by mutex ("mutex hat" idiom).
 package hatmap
 
 import "sync"
+
+// Condition to operate on a current value by the given key.
+// May be called multiple times.
+type Condition[V any] func(currValue V) bool
 
 // Map is a goroutine-safe map.
 //
@@ -33,20 +39,19 @@ func (m *Map[K, V]) Set(key K, value V) {
 	m.mu.Unlock()
 }
 
-func (m *Map[K, V]) canSet(key K, cond func(value V, exists bool) bool) (V, bool) {
+func (m *Map[K, V]) canSet(key K, cond Condition[V]) (V, bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	value, ok := m.data[key]
-	condOk := cond(value, ok)
+	value := m.data[key]
+	condOk := cond(value)
 	return value, condOk
 }
 
 // SetIf conditionally sets the value by the given key.
-// Condition function must be pure.
 // Returns final value and condition result.
-func (m *Map[K, V]) SetIf(key K, cond func(value V, exists bool) bool, valfunc func(prev V) V) (value V, ok bool) {
-	value, ok = m.canSet(key, cond)
+func (m *Map[K, V]) SetIf(key K, newValue V, cond Condition[V]) (actual V, ok bool) {
+	value, ok := m.canSet(key, cond)
 	if !ok {
 		return value, false
 	}
@@ -54,16 +59,14 @@ func (m *Map[K, V]) SetIf(key K, cond func(value V, exists bool) bool, valfunc f
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	value, ok = m.data[key]
-	if !cond(value, ok) {
+	if !cond(value) {
 		return value, false
 	}
-
-	value = valfunc(value)
 	if m.data == nil {
 		m.data = make(map[K]V)
 	}
-	m.data[key] = value
-	return value, true
+	m.data[key] = newValue
+	return newValue, true
 }
 
 // Get gets value y the given key.
@@ -82,7 +85,7 @@ func (m *Map[K, V]) Delete(key K) {
 	m.mu.Unlock()
 }
 
-func (m *Map[K, V]) canDelete(key K, cond func(value V) bool) bool {
+func (m *Map[K, V]) canDelete(key K, cond Condition[V]) bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -91,9 +94,8 @@ func (m *Map[K, V]) canDelete(key K, cond func(value V) bool) bool {
 }
 
 // DeleteIf conditionally deletes the value by the given key.
-// Condition function must be pure.
 // Returns true if the value was deleted.
-func (m *Map[K, V]) DeleteIf(key K, cond func(value V) bool) bool {
+func (m *Map[K, V]) DeleteIf(key K, cond Condition[V]) bool {
 	if !m.canDelete(key, cond) {
 		return false
 	}

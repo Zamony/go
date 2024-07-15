@@ -1,3 +1,4 @@
+// Package singleflight provides duplicate function calls suppression.
 package singleflight
 
 import (
@@ -6,17 +7,17 @@ import (
 	"github.com/Zamony/go/sync/hatmap"
 )
 
-type result[T any] struct {
-	Value   T
-	Done    chan struct{}
-	Waiters int64
+type flight[T any] struct {
+	Result       T
+	Done         chan struct{}
+	WaitersCount int64
 }
 
 // Group suppresses duplicate function calls.
 //
 // Group must not be copied after first use.
 type Group[K comparable, V any] struct {
-	results hatmap.Map[K, *result[V]]
+	flights hatmap.Map[K, *flight[V]]
 }
 
 // Do executes and returns the results of the given function, making
@@ -24,23 +25,24 @@ type Group[K comparable, V any] struct {
 // time. If a duplicate comes in, the duplicate caller waits for the
 // original to complete and receives the same results.
 func (g *Group[K, V]) Do(key K, fun func() V) V {
-	res, isPrimary := g.results.SetIf(key, func(_ *result[V], exists bool) bool {
-		return !exists
-	}, func(*result[V]) *result[V] {
-		return &result[V]{Waiters: 1, Done: make(chan struct{})}
-	})
-	if !isPrimary {
-		atomic.AddInt64(&res.Waiters, 1)
+	newFlight := &flight[V]{WaitersCount: 1, Done: make(chan struct{})}
+	currFlight, isSet := g.flights.SetIf(key, newFlight, notExists)
+	if !isSet {
+		atomic.AddInt64(&currFlight.WaitersCount, 1)
 	} else {
-		res.Value = fun()
-		close(res.Done)
+		currFlight.Result = fun()
+		close(currFlight.Done)
 	}
 
-	<-res.Done
-	atomic.AddInt64(&res.Waiters, -1)
-	g.results.DeleteIf(key, func(value *result[V]) bool {
-		return atomic.LoadInt64(&value.Waiters) == 0
+	<-currFlight.Done
+	atomic.AddInt64(&currFlight.WaitersCount, -1)
+	g.flights.DeleteIf(key, func(v *flight[V]) bool {
+		return atomic.LoadInt64(&v.WaitersCount) == 0
 	})
 
-	return res.Value
+	return currFlight.Result
+}
+
+func notExists[V any](currValue *flight[V]) bool {
+	return currValue == nil
 }

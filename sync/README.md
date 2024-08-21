@@ -13,7 +13,7 @@ SetIf(key K, newValue V, cond Condition) (actual V, ok bool)
 Delete(key K)
 DeleteIf(key K, cond Condition) bool
 Clear()
-All(yield func(key K, value V) bool) bool
+All() iter.Seq2[K, V]
 ```
 
 **Safer waitgroup**

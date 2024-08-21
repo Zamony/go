@@ -86,11 +86,9 @@ func TestMapForEach(t *testing.T) {
 	m.Set("c", 3)
 
 	mit := map[string]int{}
-	completed := m.All(func(key string, value int) bool {
+	for key, value := range m.All() {
 		mit[key] = value
-		return true
-	})
-	equal(t, completed, true)
+	}
 	equal(t, mit, map[string]int{
 		"a": 1,
 		"b": 2,
@@ -134,9 +132,9 @@ func TestMapConcurrent(t *testing.T) {
 			})
 		})
 		goGroup(&wg, func() {
-			m.All(func(string, int) bool {
-				return true
-			})
+			for k, v := range m.All() {
+				_, _ = k, v
+			}
 		})
 	}
 }

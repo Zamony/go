@@ -2,7 +2,10 @@
 // It is implemented as an ordinary map protected by mutex ("mutex hat" idiom).
 package hatmap
 
-import "sync"
+import (
+	"iter"
+	"sync"
+)
 
 // Condition to operate on a current value by the given key.
 // May be called multiple times.
@@ -119,15 +122,15 @@ func (m *Map[K, V]) Clear() {
 }
 
 // All iterates over a map.
-func (m *Map[K, V]) All(yield func(K, V) bool) bool {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+func (m *Map[K, V]) All() iter.Seq2[K, V] {
+	return func(yield func(K, V) bool) {
+		m.mu.RLock()
+		defer m.mu.RUnlock()
 
-	for k, v := range m.data {
-		if !yield(k, v) {
-			return false
+		for k, v := range m.data {
+			if !yield(k, v) {
+				return
+			}
 		}
 	}
-
-	return true
 }

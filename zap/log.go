@@ -1,4 +1,4 @@
-package stlog
+package zap
 
 import (
 	"log/slog"

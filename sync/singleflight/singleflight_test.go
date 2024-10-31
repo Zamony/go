@@ -10,8 +10,6 @@ import (
 )
 
 func TestSingleFlight(t *testing.T) {
-	t.Parallel()
-
 	var ncalls int64
 	var wg sync.WaitGroup
 	defer wg.Wait()

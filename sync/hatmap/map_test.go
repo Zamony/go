@@ -9,8 +9,6 @@ import (
 )
 
 func TestMapSetGet(t *testing.T) {
-	t.Parallel()
-
 	var m hatmap.Map[string, int]
 	m.Set("a", 1)
 
@@ -51,8 +49,6 @@ func TestMapSetGet(t *testing.T) {
 }
 
 func TestMapSetDelete(t *testing.T) {
-	t.Parallel()
-
 	m := hatmap.New[string, int](3)
 	m.Set("a", 1)
 	m.Set("b", 2)
@@ -78,8 +74,6 @@ func TestMapSetDelete(t *testing.T) {
 }
 
 func TestMapForEach(t *testing.T) {
-	t.Parallel()
-
 	var m hatmap.Map[string, int]
 	m.Set("a", 1)
 	m.Set("b", 2)
@@ -100,8 +94,6 @@ func TestMapForEach(t *testing.T) {
 }
 
 func TestMapConcurrent(t *testing.T) {
-	t.Parallel()
-
 	const key = "a"
 	var m hatmap.Map[string, int]
 	var wg sync.WaitGroup

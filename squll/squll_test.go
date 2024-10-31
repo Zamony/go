@@ -8,8 +8,6 @@ import (
 )
 
 func TestBuildQuery(t *testing.T) {
-	t.Parallel()
-
 	template := squll.Must(`INSERT INTO scores VALUES ({{argument .Name}}, {{argument .Score}})`)
 
 	type UserScore struct {
@@ -30,8 +28,6 @@ func TestBuildQuery(t *testing.T) {
 }
 
 func TestBuildQueryStaticPlaceholder(t *testing.T) {
-	t.Parallel()
-
 	template := squll.Must(
 		`INSERT INTO names VALUES ({{argument .}})`,
 		squll.WithQuestionPlaceholder(),

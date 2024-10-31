@@ -12,7 +12,6 @@ import (
 const timeout = 10 * time.Millisecond
 
 func TestMutexContext(t *testing.T) {
-	t.Parallel()
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	t.Cleanup(cancel)
 
@@ -39,8 +38,6 @@ func TestMutexContext(t *testing.T) {
 }
 
 func TestMutexLock(t *testing.T) {
-	t.Parallel()
-
 	ctx := context.Background()
 	var mu mutex.RWMutex
 	if err := mu.TryLock(ctx); err != nil {

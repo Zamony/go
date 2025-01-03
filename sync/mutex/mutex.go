@@ -30,7 +30,7 @@ func (m *RWMutex) TryRLock(ctx context.Context) error {
 	if m.mu.TryRLock() {
 		return nil
 	}
-	return wait(ctx, (&m.mu).RLocker())
+	return wait(ctx, m.mu.RLocker())
 }
 
 // Lock locks RWMutex for writing.

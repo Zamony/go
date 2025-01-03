@@ -44,11 +44,9 @@ func (m *Map[K, V]) Set(key K, value V) {
 
 func (m *Map[K, V]) canSet(key K, cond Condition[V]) (V, bool) {
 	m.mu.RLock()
-	defer m.mu.RUnlock()
-
 	value := m.data[key]
-	condOk := cond(value)
-	return value, condOk
+	m.mu.RUnlock()
+	return value, cond(value)
 }
 
 // SetIf conditionally sets the value by the given key.
@@ -58,10 +56,13 @@ func (m *Map[K, V]) SetIf(key K, newValue V, cond Condition[V]) (actual V, ok bo
 	if !ok {
 		return value, false
 	}
+	return m.setIfSlow(key, newValue, cond)
+}
 
+func (m *Map[K, V]) setIfSlow(key K, newValue V, cond Condition[V]) (actual V, ok bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	value, ok = m.data[key]
+	value, ok := m.data[key]
 	if !cond(value) {
 		return value, false
 	}
@@ -90,9 +91,8 @@ func (m *Map[K, V]) Delete(key K) {
 
 func (m *Map[K, V]) canDelete(key K, cond Condition[V]) bool {
 	m.mu.RLock()
-	defer m.mu.RUnlock()
-
 	value, ok := m.data[key]
+	m.mu.RUnlock()
 	return ok && cond(value)
 }
 
@@ -103,6 +103,10 @@ func (m *Map[K, V]) DeleteIf(key K, cond Condition[V]) bool {
 		return false
 	}
 
+	return m.deleteIfSlow(key, cond)
+}
+
+func (m *Map[K, V]) deleteIfSlow(key K, cond Condition[V]) bool {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	value, ok := m.data[key]
@@ -122,6 +126,7 @@ func (m *Map[K, V]) Clear() {
 }
 
 // All iterates over a map.
+// Don't modify the map while iterating over it.
 func (m *Map[K, V]) All() iter.Seq2[K, V] {
 	return func(yield func(K, V) bool) {
 		m.mu.RLock()

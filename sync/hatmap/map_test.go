@@ -93,50 +93,38 @@ func TestMapForEach(t *testing.T) {
 	equal(t, m.Len(), 0)
 }
 
-func TestMapConcurrent(t *testing.T) {
-	const key = "a"
-	var m hatmap.Map[string, int]
-	var wg sync.WaitGroup
-	defer wg.Wait()
+func TestMapRaces(t *testing.T) {
+	work := func(hmap *hatmap.Map[string, int], iterNum int) {
+		const key = "key"
+		hmap.Set(key, iterNum)
+		for k, v := range hmap.All() {
+			t.Logf("IterKey = %s, IterValue = %d", k, v)
+		}
+		hmap.SetIf(key, -iterNum, func(currValue int) bool {
+			return currValue%2 == 0
+		})
 
-	for i := 1; i <= 10; i++ {
-		i := i
-		goGroup(&wg, func() {
-			m.Set(key, i)
+		value, ok := hmap.Get(key)
+		t.Logf("GetKey = %s, GetValue = %d, FoundKey=%t", key, value, ok)
+		t.Logf("Len = %d", hmap.Len())
+		hmap.DeleteIf(key, func(currValue int) bool {
+			return currValue < 0
 		})
-		goGroup(&wg, func() {
-			m.SetIf(key, 77, func(currValue int) bool {
-				return true
-			})
-		})
-		goGroup(&wg, func() {
-			m.Get(key)
-		})
-		goGroup(&wg, func() {
-			m.Len()
-		})
-		goGroup(&wg, func() {
-			m.Delete(key)
-		})
-		goGroup(&wg, func() {
-			m.DeleteIf(key, func(int) bool {
-				return true
-			})
-		})
-		goGroup(&wg, func() {
-			for k, v := range m.All() {
-				_, _ = k, v
-			}
-		})
+		hmap.Delete(key)
+		hmap.Clear()
 	}
-}
 
-func goGroup(wg *sync.WaitGroup, fun func()) {
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		fun()
-	}()
+	var hmap hatmap.Map[string, int]
+	var wg sync.WaitGroup
+	const numWorkers = 100
+	wg.Add(numWorkers)
+	for iter := 0; iter < numWorkers; iter++ {
+		go func() {
+			defer wg.Done()
+			work(&hmap, iter)
+		}()
+	}
+	wg.Wait()
 }
 
 func equal(t *testing.T, got, want any) {

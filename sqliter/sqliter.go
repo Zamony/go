@@ -1,10 +1,4 @@
-/*
-Package sqliter provides utilities for querying SQL databases using iterators.
-
-It defines a Querier interface for executing SQL queries and a Query function
-that returns an iterator over the results of a query. The iterator yields
-values of a specified type and any errors encountered during the iteration.
-*/
+// Package sqliter provides iterator for querying SQL databases.
 
 package sqliter
 
@@ -27,22 +21,21 @@ type Querier interface {
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 }
 
-// Query executes a query with the provided context and returns an iterator over the results.
-// The scanner function is used to convert each row into a value of type T.
-// If an error occurs during the query execution, the iterator will yield an error as the second return value.
+// Query executes a SQL query using the provided Querier interface and processes the results
+// using the provided scanner function.
 func Query[T any](ctx context.Context, querier Querier, scanner func(row Row) (T, error), query string, args ...any) iter.Seq2[T, error] {
-	rows, err := querier.QueryContext(ctx, query, args...)
-	if err != nil {
-		return func(yield func(T, error) bool) {
+	return func(yield func(T, error) bool) {
+		rows, err := querier.QueryContext(ctx, query, args...)
+		if err != nil {
 			var t T
 			yield(t, err) // Yield an error if the query fails
+			return
 		}
-	}
-	return func(yield func(T, error) bool) {
 		defer rows.Close() // Ensure rows are closed after iteration
+
 		for rows.Next() {
-			v, err := scanner(rows) // Scan the row into a value of type T
-			if !yield(v, err) {     // Yield the value and error
+			t, err := scanner(rows) // Scan the row into a value of type T
+			if !yield(t, err) {     // Yield the value and error
 				return
 			}
 		}

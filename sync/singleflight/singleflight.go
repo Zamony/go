@@ -2,6 +2,7 @@
 package singleflight
 
 import (
+	"context"
 	"sync/atomic"
 
 	"github.com/Zamony/go/sync/hatmap"
@@ -24,7 +25,7 @@ type Group[K comparable, V any] struct {
 // sure that only one execution is in-flight for a given key at a
 // time. If a duplicate comes in, the duplicate caller waits for the
 // original to complete and receives the same results.
-func (g *Group[K, V]) Do(key K, fun func() V) V {
+func (g *Group[K, V]) Do(ctx context.Context, key K, fun func() V) (result V, err error) {
 	newFlight := &flight[V]{WaitersCount: 1, Done: make(chan struct{})}
 	currFlight, isSet := g.flights.SetIf(key, newFlight, notExists)
 	if !isSet {
@@ -34,13 +35,18 @@ func (g *Group[K, V]) Do(key K, fun func() V) V {
 		close(currFlight.Done)
 	}
 
-	<-currFlight.Done
-	atomic.AddInt64(&currFlight.WaitersCount, -1)
+	select {
+	case <-currFlight.Done:
+		result = currFlight.Result
+	case <-ctx.Done():
+		err = ctx.Err()
+	}
+
 	g.flights.DeleteIf(key, func(v *flight[V]) bool {
 		return atomic.LoadInt64(&v.WaitersCount) == 0
 	})
 
-	return currFlight.Result
+	return result, err
 }
 
 func notExists[V any](currValue *flight[V]) bool {

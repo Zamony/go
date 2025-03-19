@@ -27,7 +27,7 @@ import (
 func main() {
 	// Create a new batch with default options
 	batch := sqlbatch.New(nil)
-    defer batch.Close()
+	defer batch.Close()
 
 	// Append values to the batch
 	batch.Append(1, "Alice", 25)

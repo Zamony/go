@@ -5,6 +5,42 @@ import (
 	"sync"
 )
 
+// Mutex is a custom mutual exclusion lock that uses a channel for synchronization.
+type Mutex struct {
+	ch chan struct{}
+}
+
+// New creates and returns a new Mutex instance.
+func New() Mutex {
+	return Mutex{ch: make(chan struct{}, 1)}
+}
+
+// TryLock attempts to acquire the lock.
+// It returns an error if the context is canceled.
+func (m Mutex) TryLock(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err() // don't lock if context is canceled
+	default:
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case m.ch <- struct{}{}:
+			return nil
+		}
+	}
+}
+
+// Lock acquires the lock, blocking until it is available.
+func (m Mutex) Lock() {
+	m.ch <- struct{}{}
+}
+
+// Unlock releases the lock.
+func (m Mutex) Unlock() {
+	<-m.ch
+}
+
 // A RWMutex is a reader/writer mutual exclusion lock.
 // The lock can be held by an arbitrary number of readers or a single writer.
 // The zero value for a RWMutex is an unlocked mutex.

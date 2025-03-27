@@ -47,7 +47,7 @@ func (b baseError) Format(state fmt.State, verb rune) {
 		}
 		fallthrough
 	case 's', 'q':
-		_, _ = io.WriteString(state, b.Error())
+		io.WriteString(state, b.Error())
 	}
 }
 
@@ -61,12 +61,11 @@ func Newf(format string, a ...any) error {
 	return baseError{stderrors.New(fmt.Sprintf(format, a...)), frames()}
 }
 
+const maxStackDepth = 32
+
 func frames() []uintptr {
-	const (
-		maxDepth = 32
-		skip     = 3 // +1 Callers, +1 frames, +1 New
-	)
-	var pcs [maxDepth]uintptr
+	const skip = 3 // +1 Callers, +1 frames, +1 New
+	var pcs [maxStackDepth]uintptr
 	depth := runtime.Callers(skip, pcs[:])
 	return pcs[:depth]
 }
@@ -89,24 +88,16 @@ func Wrap(err error) error {
 // Wrapf annotates an error with a message.
 // Also adds a stacktrace to the error if it doesn't have one.
 func Wrapf(err error, format string, a ...any) error {
-	msg := fmt.Sprintf(format, a...)
-	if b, ok := err.(stacktracer); ok {
-		return wrapError(b.StackTrace(), err, msg)
-	}
-	return wrapError(frames(), err, msg)
-}
-
-func wrapError(frames StackFrames, err error, msg string) error {
 	if err == nil {
 		return nil
 	}
 
+	msg := fmt.Sprintf(format, a...)
 	newErr := fmt.Errorf("%s: %w", msg, err)
 	if b, ok := err.(stacktracer); ok {
 		return baseError{newErr, b.StackTrace()}
 	}
-
-	return baseError{newErr, frames}
+	return baseError{newErr, frames()}
 }
 
 type joinError struct {
@@ -145,14 +136,14 @@ func (e joinError) Format(state fmt.State, verb rune) {
 	switch verb {
 	case 'v':
 		if state.Flag('+') {
-			_, _ = io.WriteString(state, e.toString(func(err error) string {
+			io.WriteString(state, e.toString(func(err error) string {
 				return fmt.Sprintf("%+v", err)
 			}))
 			return
 		}
 		fallthrough
 	case 's', 'q':
-		_, _ = io.WriteString(state, e.Error())
+		io.WriteString(state, e.Error())
 	}
 }
 

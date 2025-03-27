@@ -13,7 +13,7 @@ func StackTrace(err error) string {
 		return ""
 	}
 
-	var frameset []*frameInfo
+	frameset := make([]*frameInfo, 0, maxStackDepth)
 	frames := runtime.CallersFrames(sterr.StackTrace())
 	for {
 		frame, more := frames.Next()

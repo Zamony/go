@@ -341,6 +341,6 @@ func unptr(target any) any {
 func equal(t *testing.T, got, want any) {
 	t.Helper()
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("Not equal (-want, +got):\n- %+T\n+ %+T\n", want, got)
+		t.Errorf("Not equal (-want, +got):\n- %+v\n+ %+v\n", want, got)
 	}
 }

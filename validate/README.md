@@ -27,7 +27,7 @@ go get github.com/Zamony/go/validate
 ## Usage
 
 ```go
-import "github.com/yourusername/validate"
+import "github.com/Zamony/go/validate"
 
 type User struct {
     Username string

@@ -3,6 +3,7 @@ A collection of Go libraries:
 * [sync](https://github.com/Zamony/go/tree/main/sync) - additional synchronization primitives;
 * [zap](https://github.com/Zamony/go/tree/main/zap) - structured logging;
 * [sqliter](https://github.com/Zamony/go/tree/main/sqliter) - iterator for sql queries;
+* [validate](https://github.com/Zamony/go/tree/main/validate) - generic validator;
 * [golimit](https://github.com/Zamony/go/tree/main/golimit) - simple rate limiter;
 * [optional](https://github.com/Zamony/go/tree/main/optional) - optional values;
 * [sqlbatch](https://github.com/Zamony/go/tree/main/sqlbatch) - batch inserting in db;

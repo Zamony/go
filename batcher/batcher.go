@@ -15,6 +15,7 @@ type Batcher[T any] struct {
 	items     []T
 	itemsCh   chan []T
 	maxCount  int
+	timeout   time.Duration
 	ticker    *time.Ticker
 	flushFunc FlushFunc[T]
 	waitGroup sync.WaitGroup
@@ -36,6 +37,7 @@ func New[T any](maxCount int, timeout time.Duration, fun FlushFunc[T]) *Batcher[
 		cancel:    cancel,
 		itemsCh:   make(chan []T),
 		maxCount:  maxCount,
+		timeout:   timeout,
 		ticker:    time.NewTicker(timeout),
 		flushFunc: fun,
 	}
@@ -86,6 +88,7 @@ func (b *Batcher[T]) flush() {
 	if len(b.items) > 0 {
 		b.flushFunc(b.ctx, b.items)
 		b.items = nil
+		b.ticker.Reset(b.timeout)
 	}
 }
 

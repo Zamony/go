@@ -131,7 +131,7 @@ func TestErrorIs(t *testing.T) {
 			TestName: "Stackful error itself",
 			Error:    errStack,
 			Target:   errStack,
-			Result:   false,
+			Result:   true,
 		},
 		{
 			TestName: "Different stackful errors",
@@ -155,7 +155,7 @@ func TestErrorIs(t *testing.T) {
 			TestName: "Joined error itself",
 			Error:    errJoin,
 			Target:   errJoin,
-			Result:   false,
+			Result:   true,
 		},
 		{
 			TestName: "Different joined errors",
@@ -167,7 +167,7 @@ func TestErrorIs(t *testing.T) {
 			TestName: "Joined stackful error",
 			Error:    errJoin,
 			Target:   errStack,
-			Result:   false,
+			Result:   true,
 		},
 		{
 			TestName: "Joined sentinel error",
@@ -179,13 +179,13 @@ func TestErrorIs(t *testing.T) {
 			TestName: "Wrapped stackful error",
 			Error:    errors.Wrap(errStack),
 			Target:   errStack,
-			Result:   false,
+			Result:   true,
 		},
 		{
 			TestName: "Wrapped joined error",
 			Error:    errors.Wrap(errJoin),
 			Target:   errJoin,
-			Result:   false,
+			Result:   true,
 		},
 		{
 			TestName: "Wrapped sentinel error",

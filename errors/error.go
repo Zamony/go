@@ -12,17 +12,13 @@ type baseError struct {
 	frames StackFrames
 }
 
-func (baseError) Is(error) bool {
-	return false // don't use stackful errors as sentinel ones
-}
-
-func (b baseError) Unwrap() error {
+func (b *baseError) Unwrap() error {
 	return b.err
 }
 
 type StackFrames []uintptr
 
-func (b baseError) StackTrace() StackFrames {
+func (b *baseError) StackTrace() StackFrames {
 	return copystack(b.frames)
 }
 
@@ -32,11 +28,11 @@ func copystack(stack StackFrames) StackFrames {
 	return r
 }
 
-func (b baseError) Error() string {
+func (b *baseError) Error() string {
 	return b.err.Error()
 }
 
-func (b baseError) Format(state fmt.State, verb rune) {
+func (b *baseError) Format(state fmt.State, verb rune) {
 	switch verb {
 	case 'v':
 		if state.Flag('+') {
@@ -53,12 +49,12 @@ func (b baseError) Format(state fmt.State, verb rune) {
 
 // New creates an error with message and a stacktrace.
 func New(text string) error {
-	return baseError{stderrors.New(text), frames()}
+	return &baseError{stderrors.New(text), frames()}
 }
 
 // Newf creates an error with formatted message and a stacktrace.
 func Newf(format string, a ...any) error {
-	return baseError{stderrors.New(fmt.Sprintf(format, a...)), frames()}
+	return &baseError{stderrors.New(fmt.Sprintf(format, a...)), frames()}
 }
 
 const maxStackDepth = 32
@@ -82,7 +78,7 @@ func Wrap(err error) error {
 	if _, ok := err.(stacktracer); ok {
 		return err
 	}
-	return baseError{err, frames()}
+	return &baseError{err, frames()}
 }
 
 // Wrapf annotates an error with a message.
@@ -95,9 +91,9 @@ func Wrapf(err error, format string, a ...any) error {
 	msg := fmt.Sprintf(format, a...)
 	newErr := fmt.Errorf("%s: %w", msg, err)
 	if b, ok := err.(stacktracer); ok {
-		return baseError{newErr, b.StackTrace()}
+		return &baseError{newErr, b.StackTrace()}
 	}
-	return baseError{newErr, frames()}
+	return &baseError{newErr, frames()}
 }
 
 type joinError struct {
@@ -105,19 +101,15 @@ type joinError struct {
 	frames StackFrames
 }
 
-func (e joinError) StackTrace() StackFrames {
+func (e *joinError) StackTrace() StackFrames {
 	return copystack(e.frames)
 }
 
-func (joinError) Is(error) bool {
-	return false // it only wraps other errors
-}
-
-func (e joinError) Unwrap() []error {
+func (e *joinError) Unwrap() []error {
 	return e.errors
 }
 
-func (e joinError) toString(format func(error) string) string {
+func (e *joinError) toString(format func(error) string) string {
 	errs := make([]string, len(e.errors))
 	for i := range e.errors {
 		errs[i] = format(e.errors[i])
@@ -126,13 +118,13 @@ func (e joinError) toString(format func(error) string) string {
 	return fmt.Sprintf("%q", errs)
 }
 
-func (e joinError) Error() string {
+func (e *joinError) Error() string {
 	return e.toString(func(err error) string {
 		return err.Error()
 	})
 }
 
-func (e joinError) Format(state fmt.State, verb rune) {
+func (e *joinError) Format(state fmt.State, verb rune) {
 	switch verb {
 	case 'v':
 		if state.Flag('+') {
@@ -173,10 +165,10 @@ func Join(errs ...error) error {
 		stack = frames()
 	}
 	if len(jerrs) == 1 {
-		return baseError{jerrs[0], stack}
+		return &baseError{jerrs[0], stack}
 	}
 
-	return joinError{jerrs, stack}
+	return &joinError{jerrs, stack}
 }
 
 // Is reports whether any error in err's tree matches target.

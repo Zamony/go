@@ -8,12 +8,6 @@ import (
 	"iter"
 )
 
-// Row represents a single row returned by a query.
-type Row interface {
-	// Scan copies the columns from the current row into the values pointed to by dest.
-	Scan(dest ...any) error
-}
-
 // Querier is an interface for executing SQL queries.
 type Querier interface {
 	// QueryContext executes a query with the given context and arguments,
@@ -21,27 +15,61 @@ type Querier interface {
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 }
 
-// Query executes a SQL query using the provided Querier interface and processes the results
+// RowScanner scans the current row from *sql.Rows and returns a value of type T.
+// The function is called for each row of the query result.
+type RowScanner[T any] func(row *sql.Rows) (T, error)
+
+// QueryIter executes a SQL query using the provided Querier interface and processes the results
 // using the provided scanner function.
-func Query[T any](ctx context.Context, querier Querier, scanner func(row Row) (T, error), query string, args ...any) iter.Seq2[T, error] {
+func QueryIter[T any](
+	ctx context.Context,
+	querier Querier,
+	query string,
+	args []any,
+	scan RowScanner[T],
+) iter.Seq2[T, error] {
 	return func(yield func(T, error) bool) {
 		rows, err := querier.QueryContext(ctx, query, args...)
 		if err != nil {
 			var t T
-			yield(t, err) // Yield an error if the query fails
+			yield(t, err)
 			return
 		}
-		defer rows.Close() // Ensure rows are closed after iteration
+		defer rows.Close()
 
 		for rows.Next() {
-			t, err := scanner(rows) // Scan the row into a value of type T
-			if !yield(t, err) {     // Yield the value and error
+			t, err := scan(rows)
+			if err != nil {
+				yield(t, err)
+				return
+			}
+			if !yield(t, nil) {
 				return
 			}
 		}
 		if err := rows.Err(); err != nil {
 			var t T
-			yield(t, err) // Yield an error if there was an issue during iteration
+			yield(t, err)
 		}
 	}
+}
+
+// QuerySlice executes an SQL query and returns all results as a slice.
+// If an error occurs, it returns nil and an error.
+func QuerySlice[T any](
+	ctx context.Context,
+	querier Querier,
+	query string,
+	args []any,
+	scan RowScanner[T],
+) ([]T, error) {
+	elems := make([]T, 0, 32)
+	for elem, err := range QueryIter(ctx, querier, query, args, scan) {
+		if err != nil {
+			return nil, err
+		}
+		elems = append(elems, elem)
+	}
+
+	return elems, nil
 }

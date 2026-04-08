@@ -16,7 +16,7 @@ err := errors.Wrapf(err, "user %q doesn't exist", userID)
 
 // Is reports whether any error in err's tree matches target
 if errors.Is(err, ErrNotExists) {}
-if errors.As(err, &valueErr) {}
+if v, ok := errors.AsType[*fs.PathError](err); ok {}
 
 // Join multiple errors into one
 err = errors.Join(err, closeErr)

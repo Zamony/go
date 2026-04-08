@@ -176,11 +176,10 @@ func Is(err, target error) bool {
 	return stderrors.Is(err, target)
 }
 
-// As finds the first error in err's tree that matches target,
-// and if one is found, sets target to that error value and returns true.
-// Otherwise, it returns false.
-func As(err error, target any) bool {
-	return stderrors.As(err, target)
+// AsType searches arg's error tree for an error of the specified type.
+// If found, it returns that value and true, otherwise the zero value and false.
+func AsType[T error](err error) (T, bool) {
+	return stderrors.AsType[T](err)
 }
 
 // SentinelError creates new sentinel error without stacktrace.

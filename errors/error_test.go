@@ -261,81 +261,85 @@ func TestErrorAs(t *testing.T) {
 		errStack    = errors.New("stackful")
 		errSentinel = errors.SentinelError("sentinel")
 		errJoin     = errors.Join(errStack, errSentinel)
-		stackTarget interface{ StackTrace() errors.StackFrames }
 	)
+
+	findStackTarget := func(err error) (any, bool) {
+		return errors.AsType[interface {
+			error
+			StackTrace() errors.StackFrames
+		}](err)
+	}
+
+	findCustomTarget := func(err error) (any, bool) {
+		return errors.AsType[CustomError](err)
+	}
 
 	testCases := []struct {
 		TestName string
 		Error    error
-		Target   any
+		Find     func(error) (any, bool)
 		Result   error
 	}{
 		{
 			TestName: "Stackful error itself",
 			Error:    errStack,
-			Target:   &stackTarget,
+			Find:     findStackTarget,
 			Result:   errStack,
 		},
 		{
 			TestName: "Joined error itself",
 			Error:    errJoin,
-			Target:   &stackTarget,
+			Find:     findStackTarget,
 			Result:   errJoin,
 		},
 		{
 			TestName: "Wrapped custom error",
 			Error:    errors.Wrap(CustomError{"custom wrap"}),
-			Target:   &CustomError{},
+			Find:     findCustomTarget,
 			Result:   CustomError{"custom wrap"},
 		},
 		{
 			TestName: "Wrapfed custom error",
 			Error:    errors.Wrapf(CustomError{"custom wrapf"}, "wrapf"),
-			Target:   &CustomError{},
+			Find:     findCustomTarget,
 			Result:   CustomError{"custom wrapf"},
 		},
 		{
 			TestName: "Joined custom error",
 			Error:    errors.Join(errSentinel, CustomError{"custom join"}),
-			Target:   &CustomError{},
+			Find:     findCustomTarget,
 			Result:   CustomError{"custom join"},
 		},
 		{
 			TestName: "No joined custom error",
 			Error:    errors.Join(errSentinel, errStack),
-			Target:   &CustomError{},
+			Find:     findCustomTarget,
 			Result:   nil,
 		},
 		{
 			TestName: "No wrapped custom error",
 			Error:    errors.Wrap(errSentinel),
-			Target:   &CustomError{},
+			Find:     findCustomTarget,
 			Result:   nil,
 		},
 		{
 			TestName: "No wrapfed custom error",
 			Error:    errors.Wrapf(errSentinel, "wrapf"),
-			Target:   &CustomError{},
+			Find:     findCustomTarget,
 			Result:   nil,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.TestName, func(t *testing.T) {
-			found := tc.Result != nil
-			equal(t, errors.As(tc.Error, tc.Target), found)
+			wantFound := tc.Result != nil
+			target, found := tc.Find(tc.Error)
+			equal(t, found, wantFound)
 			if found {
-				equal(t, unptr(tc.Target), tc.Result)
+				equal(t, target, tc.Result)
 			}
 		})
 	}
-}
-
-func unptr(target any) any {
-	if v := reflect.ValueOf(target); v.Kind() == reflect.Ptr {
-		return v.Elem().Interface()
-	}
-	return target
 }
 
 func equal(t *testing.T, got, want any) {
